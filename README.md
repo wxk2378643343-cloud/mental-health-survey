@@ -313,3 +313,26 @@ python -m pytest tests/test_api.py -v
 - 问卷提交（正常/高风险/不完整）
 - 管理接口权限
 - PHQ-9/SDS/SAS 评分引擎（含反向计分）
+
+
+## Docker 本地部署
+
+需要 Docker 和 Compose v2。在仓库根目录创建 `.env`，填写以下变量。
+
+```dotenv
+SECRET_KEY=replace_with_a_long_random_value
+APP_PORT=5000
+```
+
+```sh
+docker compose config --quiet
+docker compose up -d --build
+docker compose exec app python seed.py
+docker compose ps
+```
+
+打开 [http://localhost:5000](http://localhost:5000)，可使用前文的演示账号登录。
+
+镜像构建 Vue 静态站点并由 Gunicorn 运行 Flask。SQLite 保存在 `survey-data` 数据卷。量表及演示账号需执行初始化命令后才会出现。仅使用虚构问卷数据。
+
+使用 `docker compose logs --tail=100` 查看日志。使用 `docker compose down` 停止服务并保留数据卷。
