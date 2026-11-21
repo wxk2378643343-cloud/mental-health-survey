@@ -1,124 +1,63 @@
 # 心理健康问卷分析系统
 
-> 基于 Python（Flask）+ Vue 3 的前后端分离心理健康自测平台，支持多量表在线填写、自动评分、风险预警与可视化分析。
+![Flask](https://img.shields.io/badge/Flask-2563EB?style=flat-square)
+![Vue 3](https://img.shields.io/badge/Vue%203-0F766E?style=flat-square)
+![SQLite](https://img.shields.io/badge/SQLite-334155?style=flat-square)
+![JWT](https://img.shields.io/badge/JWT-B45309?style=flat-square)
 
----
+## 📌 项目简介
 
-## 目录
+包含在线填写问卷、自动评分、结果查询和后台管理，内置 PHQ-9、GAD-7、SDS 和 SAS 四套量表。
 
-- [功能特性](#功能特性)
-- [技术栈](#技术栈)
-- [项目结构](#项目结构)
-- [快速启动](#快速启动)
-- [内置量表](#内置量表)
-- [系统截图说明](#系统截图说明)
-- [API 接口](#api-接口)
-- [数据库设计](#数据库设计)
-- [评分逻辑](#评分逻辑)
-- [安全机制](#安全机制)
-- [测试](#测试)
+## 🏗️ 系统架构
 
----
+- Vue 页面向 Flask 提交作答，后端负责身份验证及量表计分。
+- SQLite 保存用户、问卷和提交记录。Docker 版由 Flask 一并提供页面构建产物。
 
-## 功能特性
+## 📁 项目结构
 
-| 角色 | 功能 |
-|------|------|
-| **普通用户** | 注册/登录、在线填写量表、自动评分、查看结果解读、历史趋势图 |
-| **管理员** | 数据概览统计、用户管理、测评记录查询、**创建自定义问卷**、风险预警处理 |
+| 路径 | 用途 |
+| --- | --- |
+| [`frontend`](frontend) | 作答、结果和后台界面 |
+| [`backend`](backend) | API、评分相关业务及种子数据 |
+| [`database`](database) | 数据库脚本 |
+| [`tests`](tests) | API 测试 |
+| [`docs`](docs) | 补充使用文档 |
 
-- 内置 4 套标准心理量表：PHQ-9、GAD-7、SDS、SAS
-- 管理员可创建自定义量表，动态设置题目与评分分级
-- 高风险（重度/中重度）结果自动触发预警通知
-- ECharts 历史趋势折线图与管理端统计图表
-- JWT 无状态认证，bcrypt 密码加密
+## 🚀 如何启动
 
----
+本地优先用 Docker。启动后执行初始化命令导入量表和演示账号。
 
-## 技术栈
+### Docker 本地部署
 
-```
-后端                         前端
-──────────────────           ──────────────────────────
-Flask 3.0                    Vue 3 + Vite
-SQLAlchemy + SQLite          Vue Router 4
-PyJWT (JWT 认证)             Pinia (状态管理)
-bcrypt (密码加密)             Element Plus (UI 组件库)
-Flask-CORS                   ECharts + vue-echarts
+需要 Docker 和 Compose v2。在仓库根目录创建 `.env`，填写以下变量。
+
+```dotenv
+SECRET_KEY=replace_with_a_long_random_value
+APP_PORT=5000
 ```
 
----
-
-## 项目结构
-
-```
-mh-survey/
-├── README.md
-│
-├── backend/                   # Flask 后端
-│   ├── app.py                 # 应用入口 & 静态文件服务
-│   ├── config.py              # 配置（密钥、DB路径）
-│   ├── models.py              # SQLAlchemy ORM 模型
-│   ├── scoring.py             # 量表评分引擎
-│   ├── auth_utils.py          # JWT 生成/验证/装饰器
-│   ├── seed.py                # 初始化量表数据 & 默认账号
-│   ├── requirements.txt
-│   └── routes/
-│       ├── auth.py            # 认证接口（注册/登录/个人信息）
-│       ├── questionnaire.py   # 量表/问卷/结果接口
-│       └── admin.py           # 管理员接口（用户/统计/预警/创建问卷）
-│
-├── frontend/                  # Vue 3 前端
-│   ├── src/
-│   │   ├── main.js            # 应用入口
-│   │   ├── App.vue
-│   │   ├── api/index.js       # Axios 封装
-│   │   ├── store/user.js      # Pinia 用户状态
-│   │   ├── router/index.js    # 路由配置
-│   │   ├── assets/style.css   # 全局样式
-│   │   ├── layouts/
-│   │   │   ├── UserLayout.vue     # 用户端布局
-│   │   │   └── AdminLayout.vue    # 管理端布局
-│   │   └── views/
-│   │       ├── Login.vue
-│   │       ├── Register.vue
-│   │       ├── user/
-│   │       │   ├── Dashboard.vue  # 量表选择首页
-│   │       │   ├── Survey.vue     # 问卷填写
-│   │       │   ├── Result.vue     # 结果详情
-│   │       │   ├── History.vue    # 历史记录 & 趋势图
-│   │       │   └── Profile.vue    # 个人信息
-│   │       └── admin/
-│   │           ├── Dashboard.vue      # 数据概览
-│   │           ├── Users.vue          # 用户管理
-│   │           ├── Results.vue        # 测评记录
-│   │           ├── Alerts.vue         # 风险预警
-│   │           └── Questionnaires.vue # 问卷管理（创建/删除）
-│   ├── index.html
-│   ├── vite.config.js
-│   └── package.json
-│
-├── database/
-│   ├── schema.sql             # 表结构文档
-│   └── mh_survey.db           # SQLite 数据库（运行后自动生成）
-│
-├── tests/
-│   └── test_api.py            # 21 个 API + 评分逻辑测试用例
-│
-└── docs/
-    └── README.md              # 详细开发文档
+```sh
+docker compose config --quiet
+docker compose up -d --build
+docker compose exec app python seed.py
+docker compose ps
 ```
 
----
+打开 [http://localhost:5000](http://localhost:5000)，可使用前文的演示账号登录。
 
-## 快速启动
+镜像构建 Vue 静态站点并由 Gunicorn 运行 Flask。SQLite 保存在 `survey-data` 数据卷。量表及演示账号需执行初始化命令后才会出现。仅使用虚构问卷数据。
 
-### 环境要求
+使用 `docker compose logs --tail=100` 查看日志。使用 `docker compose down` 停止服务并保留数据卷。
+
+### 快速启动
+
+#### 环境要求
 
 - Python 3.9+
 - Node.js 18+
 
-### 第一步：安装后端依赖并初始化数据库
+#### 第一步：安装后端依赖并初始化数据库
 
 ```bash
 cd backend
@@ -137,14 +76,14 @@ Created questionnaire: SAS
 Seed completed.
 ```
 
-### 第二步：安装前端依赖
+#### 第二步：安装前端依赖
 
 ```bash
 cd frontend
 npm install
 ```
 
-### 第三步A：开发模式（推荐，前后端同时运行）
+#### 第三步A：开发模式（推荐，前后端同时运行）
 
 ```bash
 # 终端1 - 后端（http://127.0.0.1:5000）
@@ -158,7 +97,7 @@ npm run dev
 
 > Vite 已配置代理，`/api` 请求自动转发到 `:5000`，无需修改任何配置。
 
-### 第三步B：生产模式（Flask 一体化）
+#### 第三步B：生产模式（Flask 一体化）
 
 ```bash
 # 打包前端
@@ -169,7 +108,7 @@ cd ../backend && python app.py
 # 访问 http://127.0.0.1:5000
 ```
 
-### 演示账号
+#### 演示账号
 
 系统初始化后可直接使用以下账号登录体验：
 
@@ -179,6 +118,21 @@ cd ../backend && python app.py
 | `testuser` | `test123` | 普通用户 | 可填写量表、查看历史记录与趋势图 |
 
 > 登录地址：开发模式访问 `http://localhost:3000`，生产模式访问 `http://127.0.0.1:5000`
+
+---
+
+## 功能特性
+
+| 角色 | 功能 |
+|------|------|
+| **普通用户** | 注册/登录、在线填写量表、自动评分、查看结果解读、历史趋势图 |
+| **管理员** | 数据概览统计、用户管理、测评记录查询、**创建自定义问卷**、风险预警处理 |
+
+- 内置 4 套标准心理量表：PHQ-9、GAD-7、SDS、SAS
+- 管理员可创建自定义量表，动态设置题目与评分分级
+- 高风险（重度/中重度）结果自动触发预警通知
+- ECharts 历史趋势折线图与管理端统计图表
+- JWT 无状态认证，bcrypt 密码加密
 
 ---
 
@@ -313,26 +267,3 @@ python -m pytest tests/test_api.py -v
 - 问卷提交（正常/高风险/不完整）
 - 管理接口权限
 - PHQ-9/SDS/SAS 评分引擎（含反向计分）
-
-
-## Docker 本地部署
-
-需要 Docker 和 Compose v2。在仓库根目录创建 `.env`，填写以下变量。
-
-```dotenv
-SECRET_KEY=replace_with_a_long_random_value
-APP_PORT=5000
-```
-
-```sh
-docker compose config --quiet
-docker compose up -d --build
-docker compose exec app python seed.py
-docker compose ps
-```
-
-打开 [http://localhost:5000](http://localhost:5000)，可使用前文的演示账号登录。
-
-镜像构建 Vue 静态站点并由 Gunicorn 运行 Flask。SQLite 保存在 `survey-data` 数据卷。量表及演示账号需执行初始化命令后才会出现。仅使用虚构问卷数据。
-
-使用 `docker compose logs --tail=100` 查看日志。使用 `docker compose down` 停止服务并保留数据卷。
